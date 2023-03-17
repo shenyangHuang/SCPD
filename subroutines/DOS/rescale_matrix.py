@@ -1,0 +1,122 @@
+import math
+import numpy as np
+import scipy.sparse as ss
+import scipy.sparse.linalg as ssla
+
+'''
+normalized an adjacency matrix
+'''
+def matrix_normalize(A):
+
+	dc = A.sum(axis=0)
+	dc = np.asarray(dc)
+	dc = dc.reshape((-1))
+	dr = A.sum(axis=1)
+	dr = np.asarray(dr)
+	dr = dr.reshape((-1))
+	nz = A.nonzero()
+
+	AL = A.tolil()
+	for k in range(nz[0].shape[0]):
+		AL[nz[0][k],nz[1][k]] = AL[nz[0][k],nz[1][k]] / math.sqrt(dc[nz[0][k]] * dr[nz[1][k]])
+	A = AL.tocsr() 
+	return A
+
+
+
+
+def rescale_matrix(H,range=0.01):
+	"""
+	Rescale the symmetric matrix H so the eigenvalue range maps to between -1 
+	and 1. If range is not given, the function uses Lanczos to estimate the 
+	extremal eigenvalues, expanding by a relative fudge factor.
+
+	Args:
+		H: The original matrix
+		range: A two-element vector representing an interval of eigenvalues
+		fudge: A scalar to guard against range underestimates (default=0.01)
+	
+	Output:
+		H: The scaled matrix
+		ab: Transformation parameters: Hs=(H-b)/a
+	"""
+
+	# Get the fudge factor and range
+	if not isinstance(range,list) or len(range) == 1:
+		fudge = range
+		range = []
+	else:
+		fudge = 0
+
+	n = H.shape[0]
+
+	# Compute range if not given
+	if not range:
+		range = ssla.eigsh(H,1,which='SA',
+				return_eigenvectors=False)
+		range = np.append(range,ssla.eigsh(H,1,
+				which='LA',return_eigenvectors=False))
+
+	# Form dense or sparse identity, as appropraite
+	if ss.issparse(H):
+		I = ss.eye(H.shape[0])
+	else:
+		I = np.eye(H.shape[0])
+
+	# Parameters for linear mapping
+	ab = [(range[1]-range[0])/(2-fudge),(range[1]+range[0])/2]
+	H = (H-ab[1]*I)/ab[0]
+	ab = np.asarray(ab).reshape([2,-1])
+	return H,ab
+
+def rescale_mfunc(H,n=0.01,range=0.01):
+	"""
+	Rescale the symmetric matrix/operator H so the eigenvalue range maps to 
+	between -1 and 1. If the range is not given, the function uses Lanczos
+	to estimate the extremal eigenvalues, expanding by a relative fudge factor
+
+	Input:
+		H: The original operator/matrix
+		n: The dimension of the space
+		range: A two-element vector representing an interval of eigenvalues
+		fudge: A scalar to guard against range underestimates (default=0.01) 
+
+	Output:
+		Hfun: The scaled operator
+		ab: Transformation parameters: Hs=(H-b)/a
+	"""
+	
+	# Create a function handle if a matrix is given
+	if callable(H):
+		if not isinstance(n,int):
+			raise ValueError('Missing size argument')
+		if not isinstance(range,list) or len(range) == 1:
+			fudge = range
+			range = []
+		else:
+			fudge = 0
+
+		# Lanczos to estimate range if not given
+		if not range:
+			range = ssla.eigsh(ssla.LinearOperator((n,n),H,dtype='float64'),1,which='SA',
+				return_eigenvectors=False)
+			range = np.append(range,ssla.eigsh(ssla.LinearOperator((n,n),H,dtype='float64'),1,
+				which='LA',return_eigenvectors=False))
+
+		# Parameters for lienar mapping
+		ab = [(range[1]-range[0])/(2-fudge),(range[1]+range[0])/2]
+		Hfun = lambda x: (H(x)-ab[1]*x)/ab[0]
+	else:
+		if isinstance(H,np.ndarray):
+			H = ss.csr_matrix(H)
+		if not isinstance(n,int):
+			range = n
+			n = H.shape[0]
+		H,ab = rescale_matrix(H,range)
+		Hfun = lambda x: H*x
+
+	ab = np.asarray(ab).reshape([2,-1])
+	return Hfun,ab
+
+if __name__ == '__main__':
+	pass
