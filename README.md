@@ -13,7 +13,7 @@ Official code repository for PAKDD 2023 paper "Fast and Attributed Change Detect
   </a>
 </p>
 
-![SCPD](figs/crown.png)
+![SCPD](figs/crown_pic.png)
 
 
 ## Dataset Links
