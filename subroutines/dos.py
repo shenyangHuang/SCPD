@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../')
 from subroutines.DOS import moment_comp, moment_filter, rescale_matrix, plot_cheb
-from datasets import SBM_loader, geology_loader
+from datasets import SBM_loader, geology_loader, coin_loader
 import networkx as nx
 import numpy as np
 import numpy.random as nr
@@ -242,6 +242,40 @@ def load_vec(eigen_file):
     vecs = normal_util.load_object(eigen_file)
     print (vecs)
 
+
+
+'''
+compute density of states for the Stablecoin dataset
+'''
+def coin_dos(Nmoment=10, nZ=20, npts=50):
+    fname = "../datasets/coin/coin_edgelistv3.csv"#"../datasets/coin/coin_edgelist.csv"
+    outname = "coindosv3"
+    G_times = coin_loader.parse_daily_graphs(fname)
+    vecs = []
+    density = []
+    total_edges = 0
+    total_time = 0
+    total_nodes = 0
+    for i in range(len(G_times)):
+        print ("processing time step " + str(i),end="\r")
+        total_nodes += G_times[i].number_of_nodes()
+        density.append(G_times[i].number_of_nodes() / G_times[i].number_of_edges())
+        total_edges = total_edges + G_times[i].number_of_edges()
+        L = nx.linalg.laplacianmatrix.normalized_laplacian_matrix(G_times[i], weight='weight')
+        L = L.asfptype()
+        start = timeit.default_timer()        
+        vecs.append(get_dos(L, Nmoment=Nmoment, nZ=nZ, npts=npts))
+        normal_util.save_object(vecs, outname + 'N' + str(Nmoment)+".pkl")
+        end = timeit.default_timer()
+        total_time = total_time + end - start
+    print ('DOS time: '+str(total_time)+'\n')
+    print ("total nodes are " + str(total_nodes))
+    print ('total edges are ' + str(total_edges))
+    print ("there are " + str(int(total_edges/len(G_times))) + " average edges per snapshot")
+    den = np.array(density)
+    print ("the average density per snapshot is ", np.mean(den))
+    normal_util.save_object(vecs, outname + 'N' + str(Nmoment)+".pkl")
+
 if __name__ == '__main__':
 
     '''
@@ -252,6 +286,17 @@ if __name__ == '__main__':
     npts= 50
 
     mag_history_dos(Nmoment=Nmoment, nZ=nZ, npts=npts)
+
+
+    '''
+    run this block for coin
+    '''
+    Nmoment = 20
+    nZ = 100
+    npts= 50
+
+    coin_dos(Nmoment=Nmoment, nZ=nZ, npts=npts)
+
 
 
     '''
