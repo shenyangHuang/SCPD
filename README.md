@@ -41,6 +41,9 @@ follow main function in `dos.py` to generate dos embeddings in python, and for r
 
 follow main function in `spotlight.py` to run SPOTLIGHT experiments
 
+## Contact:
+
+Feel free to reach out to me if you have any questions: `shenyang.huang@mail.mcgill.ca`
 
 
 ## Citation:
