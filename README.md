@@ -41,6 +41,12 @@ follow main function in `dos.py` to generate dos embeddings in python, and for r
 
 follow main function in `spotlight.py` to run SPOTLIGHT experiments
 
+**To use local DOS to approximate eigenvectors**
+
+You can use the MATLAB code under `SCPD/subroutines/ADOS`. 
+Because the interaction with eigenvectors are approximated with the GQL approximation method (currently only implemented in MATLAB so far). 
+
+
 ## Contact:
 
 Feel free to reach out to me if you have any questions: `shenyang.huang@mail.mcgill.ca`
